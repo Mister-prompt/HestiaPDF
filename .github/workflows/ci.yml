@@ -45,6 +45,14 @@ jobs:
       - name: TypeScript
         run: npm run check
 
+  # cargo-deny est une action conteneur : elle ne tourne que sous Linux.
+  # deny.toml cible x86_64-pc-windows-msvc, donc c'est bien l'arbre de
+  # dépendances Windows qui est vérifié.
+  deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Licences et failles connues des dépendances Rust
         uses: EmbarkStudios/cargo-deny-action@v2
         with:
