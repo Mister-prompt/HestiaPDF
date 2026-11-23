@@ -11,6 +11,12 @@ all-features = false
 [advisories]
 # Failles connues (base RustSec) : tout avertissement doit être examiné.
 yanked = "deny"
+ignore = [
+  # ttf-parser n'est plus maintenu (aucune faille connue). Il ne lit que les
+  # polices livrées avec l'application, jamais un fichier de l'utilisateur.
+  # Remplacement prévu : skrifa (projet fontations de Google Fonts).
+  { id = "RUSTSEC-2026-0192", reason = "non maintenu, sans faille ; lit seulement nos polices livrées" },
+]
 
 [licenses]
 allow = [
@@ -29,6 +35,9 @@ allow = [
   "MPL-2.0",
   "0BSD",
   "CDLA-Permissive-2.0",
+  # Licence de la libjpeg (jpeg-encoder) : permissive, demande une mention
+  # dans la documentation (voir THIRD_PARTY_NOTICES.md).
+  "IJG",
 ]
 confidence-threshold = 0.9
 
