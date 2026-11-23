@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-inspect-pdf"
+description = "Enables the inspect_pdf command without any pre-configured scope."
+commands.allow = ["inspect_pdf"]
+
+[[permission]]
+identifier = "deny-inspect-pdf"
+description = "Denies the inspect_pdf command without any pre-configured scope."
+commands.deny = ["inspect_pdf"]

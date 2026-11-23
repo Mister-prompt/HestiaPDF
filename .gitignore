@@ -1,0 +1,30 @@
+# Rust
+/target/
+
+# Node / Vite
+/node_modules/
+/dist/
+
+# Tauri (fichiers générés)
+/src-tauri/gen/
+/src-tauri/target/
+
+# PDFium : binaire téléchargé et vérifié par scripts/fetch-pdfium.ps1
+/src-tauri/resources/pdfium/pdfium.dll
+
+# Fichiers d'essai générés (cargo run -p hestia-core --example fixtures)
+/essais/
+
+# Divers
+*.log
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Captures temporaires d'Impeccable (les rapports d'audit, eux, sont gardés)
+/.impeccable/review/
+
+# Réglages locaux de Claude Code
+/.claude/

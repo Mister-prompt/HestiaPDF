@@ -1,0 +1,11 @@
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <mask id="m__ID__" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+      <rect width="24" height="24" fill="#fff"/>
+      <text x="14.75" y="18.55" text-anchor="middle" font-size="5.5" font-family="Segoe UI Variable Display, Segoe UI, system-ui, sans-serif" font-weight="800" fill="#000">JPG</text>
+    </mask>
+  </defs>
+  <path fill="currentColor" opacity=".14" d="M5 1.5h6.4c.53 0 1.04.21 1.41.59l2.1 2.1c.38.37.59.88.59 1.41V16.5A2.5 2.5 0 0 1 13 19H5a2.5 2.5 0 0 1-2.5-2.5V4A2.5 2.5 0 0 1 5 1.5Z"/>
+  <text x="4.3" y="7.6" font-size="4.3" font-family="Segoe UI Variable Display, Segoe UI, system-ui, sans-serif" font-weight="800" fill="currentColor">PDF</text>
+  <rect x="7" y="12" width="15.5" height="9.5" rx="2.4" fill="currentColor" mask="url(#m__ID__)"/>
+</svg>

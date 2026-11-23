@@ -1,0 +1,28 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "Fenêtre principale : uniquement les commandes d'Hestia PDF et l'écoute de ses événements. Aucun accès direct au disque, au réseau ou au shell.",
+  "windows": ["main"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:window:allow-destroy",
+    "allow-pick-files",
+    "allow-startup-files",
+    "allow-inspect-pdf",
+    "allow-render-page",
+    "allow-image-thumbnail",
+    "allow-cancel-job",
+    "allow-reveal-in-folder",
+    "allow-app-info",
+    "allow-merge-pdfs",
+    "allow-split-pdf",
+    "allow-compress-pdfs",
+    "allow-pdf-to-jpg",
+    "allow-jpg-to-pdf",
+    "allow-edit-pdf",
+    "allow-office-status",
+    "allow-office-to-pdf-files",
+    "allow-pdf-to-office-files"
+  ]
+}

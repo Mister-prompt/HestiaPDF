@@ -1,0 +1,28 @@
+[package]
+name = "hestia-core"
+description = "Moteur PDF local d'Hestia PDF : fusion, division, compression, conversions images."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+pdfium-render = "0.9.6"
+lopdf = "0.47"
+image.workspace = true
+jpeg-encoder = "0.7"
+flate2 = "1"
+subsetter = { version = "0.2.6", default-features = false }
+ttf-parser = { version = "0.25.1", default-features = false, features = ["std"] }
+rayon = "1"
+tempfile = "3"
+serde.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

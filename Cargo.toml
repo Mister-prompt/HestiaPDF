@@ -1,0 +1,39 @@
+[workspace]
+resolver = "3"
+members = ["crates/hestia-core", "src-tauri"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+license = "UNLICENSED"
+authors = ["Hestia PDF"]
+
+[workspace.dependencies]
+hestia-core = { path = "crates/hestia-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "bmp", "tiff", "gif"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+# Binaire de production : petit, rapide, sans symboles.
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+# « unwind » (et non « abort ») : une erreur inattendue pendant un traitement
+# est rattrapée et signalée, au lieu de fermer brutalement l'application.
+panic = "unwind"
+strip = true
+
+# En développement, on optimise les dépendances (décodage d'images, PDF)
+# pour que l'appli reste fluide sans ralentir la compilation de notre code.
+[profile.dev.package."*"]
+opt-level = 2

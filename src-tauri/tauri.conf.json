@@ -1,0 +1,79 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Hestia PDF",
+  "mainBinaryName": "hestia-pdf",
+  "version": "0.1.0",
+  "identifier": "com.hestiapdf.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [],
+    "security": {
+      "freezePrototype": true,
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self'",
+        "img-src": "'self' blob: data:",
+        "font-src": "'self'",
+        "connect-src": "'self' ipc: http://ipc.localhost",
+        "object-src": "'none'",
+        "base-uri": "'none'",
+        "form-action": "'none'",
+        "frame-src": "'none'",
+        "frame-ancestors": "'none'",
+        "worker-src": "'none'",
+        "media-src": "'none'"
+      },
+      "devCsp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "'self' blob: data:",
+        "font-src": "'self'",
+        "connect-src": "'self' ipc: http://ipc.localhost ws://localhost:1420",
+        "object-src": "'none'",
+        "base-uri": "'none'",
+        "form-action": "'none'",
+        "frame-src": "'none'"
+      },
+      "capabilities": ["main"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "publisher": "Hestia PDF",
+    "copyright": "© 2026 Hestia PDF",
+    "category": "Productivity",
+    "shortDescription": "Vos outils PDF, 100 % en local.",
+    "longDescription": "Hestia PDF fusionne, divise, compresse et convertit vos PDF directement sur votre ordinateur. Aucun fichier n'est envoyé sur Internet.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "resources/pdfium/pdfium.dll": "pdfium/pdfium.dll",
+      "resources/pdfium/LICENSE-pdfium.txt": "pdfium/LICENSE-pdfium.txt",
+      "resources/pdfium/licenses/": "pdfium/licenses/"
+    },
+    "windows": {
+      "nsis": {
+        "languages": ["French", "English"],
+        "displayLanguageSelector": false,
+        "installMode": "currentUser"
+      },
+      "wix": {
+        "language": ["fr-FR", "en-US"]
+      }
+    }
+  }
+}

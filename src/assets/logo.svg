@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Hestia PDF : la flamme du foyer (Hestia) sur une feuille (PDF).
+       Palette : jaune #FFEB33, aubergine #1E0B1B, gris #EBEBEB. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFEF5C"/>
+      <stop offset="1" stop-color="#FFE21A"/>
+    </linearGradient>
+  </defs>
+  <rect x="48" y="48" width="928" height="928" rx="216" fill="url(#bg)"/>
+  <!-- Feuille -->
+  <path d="M340 196H616L760 340V772Q760 828 704 828H340Q284 828 284 772V252Q284 196 340 196Z" fill="#FFFFFF"/>
+  <path d="M616 196V300Q616 340 656 340H760Z" fill="#EBEBEB"/>
+  <!-- Flamme -->
+  <path d="M520 352C534 420 520 470 486 512C470 486 462 458 462 430C404 482 368 552 368 616C368 702 436 760 520 760C604 760 672 702 672 620C672 534 616 446 520 352Z" fill="#1E0B1B"/>
+  <path d="M522 556C564 600 588 638 588 672C588 712 558 738 522 738C486 738 456 712 456 674C456 640 478 602 522 556Z" fill="#FFEB33"/>
+</svg>

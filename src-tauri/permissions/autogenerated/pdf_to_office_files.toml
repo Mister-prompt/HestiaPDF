@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-pdf-to-office-files"
+description = "Enables the pdf_to_office_files command without any pre-configured scope."
+commands.allow = ["pdf_to_office_files"]
+
+[[permission]]
+identifier = "deny-pdf-to-office-files"
+description = "Denies the pdf_to_office_files command without any pre-configured scope."
+commands.deny = ["pdf_to_office_files"]
