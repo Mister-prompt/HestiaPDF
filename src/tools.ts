@@ -7,6 +7,7 @@ import type { IconName } from "./icons";
 export type ToolId =
   | "merge"
   | "split"
+  | "organize"
   | "compress"
   | "pdfToWord"
   | "pdfToPpt"
@@ -32,6 +33,7 @@ export interface ToolDef {
 export const TOOLS: ToolDef[] = [
   { id: "merge", icon: "merge", category: "organize", ready: true, accepts: "pdf" },
   { id: "split", icon: "split", category: "organize", ready: true, accepts: "pdf" },
+  { id: "organize", icon: "organize", category: "organize", ready: true, accepts: "pdf" },
   { id: "compress", icon: "compress", category: "optimize", ready: true, accepts: "pdf" },
   { id: "pdfToWord", icon: "pdfToWord", category: "convert", ready: true, accepts: "pdf" },
   { id: "pdfToPpt", icon: "pdfToPpt", category: "convert", ready: true, accepts: "pdf" },

@@ -22,6 +22,7 @@ import { compressConfig } from "./tools/compress";
 import { jpgToPdfConfig } from "./tools/jpg-to-pdf";
 import { mergeConfig } from "./tools/merge";
 import { confirmLeave, editConfig } from "./tools/edit";
+import { organizeConfig } from "./tools/organize";
 import { officeToPdfConfig } from "./tools/office-to-pdf";
 import { pdfToJpgConfig } from "./tools/pdf-to-jpg";
 import { pdfToOfficeConfig } from "./tools/pdf-to-office";
@@ -61,6 +62,7 @@ export interface ToolConfig {
 const CONFIGS: Partial<Record<ToolId, ToolConfig>> = {
   merge: mergeConfig,
   split: splitConfig,
+  organize: organizeConfig,
   compress: compressConfig,
   pdfToJpg: pdfToJpgConfig,
   jpgToPdf: jpgToPdfConfig,
@@ -654,7 +656,7 @@ export class ToolPage {
 
   // --- Traitement -------------------------------------------------------------
 
-  private async run(): Promise<void> {
+  async run(): Promise<void> {
     const jobId = `job-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const channel = new Channel<Progress>();
     this.stage = "working";

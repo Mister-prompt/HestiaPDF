@@ -11,6 +11,7 @@ const COMMANDS: &[&str] = &[
     "reveal_in_folder",
     "app_info",
     "merge_pdfs",
+    "organize_pdf",
     "split_pdf",
     "compress_pdfs",
     "pdf_to_jpg",

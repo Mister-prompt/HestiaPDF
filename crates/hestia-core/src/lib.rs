@@ -20,6 +20,7 @@ pub mod job;
 mod lopdf_io;
 pub mod merge;
 pub mod office;
+pub mod organize;
 pub mod output;
 pub mod pdf_to_images;
 pub mod pdf_to_office;

@@ -9,7 +9,7 @@ import { effectiveStyle, fontCss } from "./fonts";
 export const TEXT_LINE_HEIGHT = 1.25;
 export const TEXT_BASELINE = 0.95;
 
-export type Tool = "select" | "text" | "image" | "rect" | "ellipse" | "line" | "arrow" | "ink" | "highlight";
+export type Tool = "select" | "text" | "image" | "rect" | "ellipse" | "line" | "arrow" | "ink" | "highlight" | "measure";
 
 interface Base {
   id: string;
@@ -73,7 +73,75 @@ export interface ImageObj extends Base {
   grayscale: boolean;
 }
 
-export type EditorObject = TextObj | ShapeObj | LineObj | InkObj | ImageObj;
+/** Mesure entre deux points ; écrite dans le PDF seulement si `keep`. */
+export interface MeasureObj extends Base {
+  type: "measure";
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  color: string;
+  width: number;
+  keep: boolean;
+}
+
+export type EditorObject = TextObj | ShapeObj | LineObj | InkObj | ImageObj | MeasureObj;
+
+// --- Mesures -----------------------------------------------------------------
+
+export type MeasureUnit = "cm" | "in";
+
+/** Taille de l'étiquette d'une mesure, en points. */
+export const MEASURE_LABEL_SIZE = 10;
+
+/** Longueur réelle sur la feuille imprimée à 100 % (1 pt = 1/72 de pouce). */
+export function measureLength(obj: Pick<MeasureObj, "x1" | "y1" | "x2" | "y2">, unit: MeasureUnit): number {
+  const inches = Math.hypot(obj.x2 - obj.x1, obj.y2 - obj.y1) / 72;
+  return unit === "cm" ? inches * 2.54 : inches;
+}
+
+export function formatLength(value: number, unit: MeasureUnit, locale: string): string {
+  const number = value.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${number} ${unit === "cm" ? "cm" : "in"}`;
+}
+
+/** Géométrie d'une mesure : traits d'extrémité et cadre de l'étiquette. */
+export function measureGeometry(obj: MeasureObj, label: string) {
+  const dx = obj.x2 - obj.x1;
+  const dy = obj.y2 - obj.y1;
+  const len = Math.max(0.001, Math.hypot(dx, dy));
+  // Normale orientée vers le haut (ou vers la droite pour un trait vertical).
+  let nx = -dy / len;
+  let ny = dx / len;
+  if (ny > 0 || (Math.abs(ny) < 1e-6 && nx < 0)) {
+    nx = -nx;
+    ny = -ny;
+  }
+  const tick = Math.max(4, obj.width * 3);
+  const ticks: [number, number, number, number][] = [
+    [obj.x1 + nx * tick, obj.y1 + ny * tick, obj.x1 - nx * tick, obj.y1 - ny * tick],
+    [obj.x2 + nx * tick, obj.y2 + ny * tick, obj.x2 - nx * tick, obj.y2 - ny * tick],
+  ];
+  const size = MEASURE_LABEL_SIZE;
+  const textW = measureLine(label, { size, font: "helvetica", bold: false, italic: false });
+  const padX = 3;
+  const boxW = textW + 2 * padX;
+  const boxH = size * TEXT_LINE_HEIGHT + 2;
+  const gap = tick + 3;
+  const cx = (obj.x1 + obj.x2) / 2 + nx * (gap + Math.abs(ny) * (boxH / 2) + Math.abs(nx) * (boxW / 2));
+  const cy = (obj.y1 + obj.y2) / 2 + ny * (gap + Math.abs(ny) * (boxH / 2) + Math.abs(nx) * (boxW / 2));
+  const box: Box = { x: cx - boxW / 2, y: cy - boxH / 2, w: boxW, h: boxH };
+  return { ticks, box, textX: box.x + padX, textY: box.y + 1, size };
+}
+
+/** Texte de l'étiquette, fixé par l'éditeur (unité et langue choisies). */
+let measureLabel = (obj: MeasureObj) => formatLength(measureLength(obj, "cm"), "cm", "fr-FR");
+
+export function setMeasureLabel(fn: (obj: MeasureObj) => string): void {
+  measureLabel = fn;
+}
+
+export const labelOf = (obj: MeasureObj) => measureLabel(obj);
 
 export interface Box {
   x: number;
@@ -137,6 +205,12 @@ export function bounds(obj: EditorObject): Box {
     case "ellipse":
     case "image":
       return { x: obj.x, y: obj.y, w: obj.w, h: obj.h };
+    case "measure": {
+      const { box, ticks } = measureGeometry(obj, labelOf(obj));
+      const xs = [box.x, box.x + box.w, ...ticks.flatMap((t) => [t[0], t[2]])];
+      const ys = [box.y, box.y + box.h, ...ticks.flatMap((t) => [t[1], t[3]])];
+      return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+    }
     case "line": {
       const pad = obj.width / 2;
       const x = Math.min(obj.x1, obj.x2) - pad;
@@ -165,6 +239,11 @@ function distToSegment(px: number, py: number, ax: number, ay: number, bx: numbe
 /** L'objet est-il sous le point (x, y) ? `tol` en points. */
 export function hit(obj: EditorObject, x: number, y: number, tol: number): boolean {
   if (obj.type === "line") return distToSegment(x, y, obj.x1, obj.y1, obj.x2, obj.y2) <= obj.width / 2 + tol;
+  if (obj.type === "measure") {
+    if (distToSegment(x, y, obj.x1, obj.y1, obj.x2, obj.y2) <= obj.width / 2 + tol + 2) return true;
+    const { box } = measureGeometry(obj, labelOf(obj));
+    return x >= box.x - tol && x <= box.x + box.w + tol && y >= box.y - tol && y <= box.y + box.h + tol;
+  }
   if (obj.type === "ink") {
     const pts = obj.points;
     if (pts.length === 1) return Math.hypot(x - pts[0]![0], y - pts[0]![1]) <= obj.width / 2 + tol;
@@ -181,6 +260,7 @@ export function hit(obj: EditorObject, x: number, y: number, tol: number): boole
 export function translate(obj: EditorObject, dx: number, dy: number): void {
   switch (obj.type) {
     case "line":
+    case "measure":
       obj.x1 += dx;
       obj.x2 += dx;
       obj.y1 += dy;
@@ -224,7 +304,47 @@ export function simplify(points: [number, number][], tolerance: number): [number
 
 const r2 = (v: number) => Math.round(v * 100) / 100;
 
-export function toWire(obj: EditorObject): WireObject {
+/**
+ * Objets envoyés à Rust pour un élément de l'éditeur. Une mesure devient
+ * un trait, deux traits d'extrémité, un fond blanc et son étiquette, ou
+ * rien du tout si elle n'est qu'affichée.
+ */
+export function toWire(obj: EditorObject): WireObject[] {
+  if (obj.type !== "measure") return [toWireOne(obj)];
+  if (!obj.keep) return [];
+  const label = labelOf(obj);
+  const g = measureGeometry(obj, label);
+  const line = (x1: number, y1: number, x2: number, y2: number): WireObject => ({
+    type: "line",
+    x1: r2(x1),
+    y1: r2(y1),
+    x2: r2(x2),
+    y2: r2(y2),
+    color: obj.color,
+    width: obj.width,
+    opacity: obj.opacity,
+    arrow: false,
+  });
+  return [
+    line(obj.x1, obj.y1, obj.x2, obj.y2),
+    ...g.ticks.map((t) => line(...t)),
+    { type: "rect", x: r2(g.box.x), y: r2(g.box.y), w: r2(g.box.w), h: r2(g.box.h), stroke: null, fill: "#ffffff", strokeWidth: 0, opacity: 0.85 },
+    {
+      type: "text",
+      x: r2(g.textX),
+      y: r2(g.textY),
+      size: g.size,
+      font: "helvetica",
+      bold: false,
+      italic: false,
+      color: obj.color,
+      opacity: obj.opacity,
+      lines: [label],
+    },
+  ];
+}
+
+function toWireOne(obj: Exclude<EditorObject, MeasureObj>): WireObject {
   switch (obj.type) {
     case "text":
       return {

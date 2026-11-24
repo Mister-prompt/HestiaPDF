@@ -1,10 +1,12 @@
-// Éditeur visuel « Modifier PDF » : la page (rendu PDFium) + un calque SVG
-// où l'on ajoute, sélectionne, déplace et redimensionne les éléments.
+// Éditeur visuel « Modifier PDF » : toutes les pages (rendu PDFium) les unes
+// sous les autres, chacune avec un calque SVG où l'on ajoute, sélectionne,
+// déplace et redimensionne les éléments.
 
 import { api, toCommandError, type EditDocument, type PdfInput } from "../../api";
 import { h, type Scope } from "../../dom";
-import { t, type Key } from "../../i18n";
+import { getLang, t, type Key } from "../../i18n";
 import { icon, type IconName } from "../../icons";
+import { readSetting, writeSetting } from "../../storage";
 import { errorText, toast } from "../../ui";
 import { zoomField } from "../zoom-field";
 import { effectiveStyle, ensureFont, fontCss, missingChars, onFontLoaded } from "./fonts";
@@ -12,9 +14,14 @@ import {
   arrowHead,
   baselineOf,
   bounds,
+  formatLength,
   hit,
+  labelOf,
+  measureGeometry,
+  measureLength,
   measureLine,
   newId,
+  setMeasureLabel,
   simplify,
   TEXT_LINE_HEIGHT,
   toWire,
@@ -24,6 +31,8 @@ import {
   type ImageObj,
   type InkObj,
   type LineObj,
+  type MeasureObj,
+  type MeasureUnit,
   type ShapeObj,
   type TextObj,
   type Tool,
@@ -54,14 +63,36 @@ export const defaults = {
   line: { color: "#b91c1c", width: 2, opacity: 1 },
   ink: { color: "#b91c1c", width: 3, opacity: 1 },
   highlight: { color: "#facc15", width: 14, opacity: 0.4 },
+  measure: {
+    color: "#1d4ed8",
+    width: 1,
+    opacity: 1,
+    /** Les nouvelles mesures sont-elles ajoutées au PDF ? */
+    keep: false,
+    unit: (readSetting("measureUnit") === "in" ? "in" : "cm") as MeasureUnit,
+  },
 };
+
+/** Longueur affichée d'une mesure, dans l'unité et la langue choisies. */
+export function lengthText(obj: Pick<MeasureObj, "x1" | "y1" | "x2" | "y2">, unit = defaults.measure.unit): string {
+  return formatLength(measureLength(obj, unit), unit, getLang() === "fr" ? "fr-FR" : "en-US");
+}
+setMeasureLabel((obj) => lengthText(obj));
+
+/** Une page affichée : rendu PDFium + calque d'édition. */
+interface PageView {
+  index: number;
+  el: HTMLElement;
+  img: HTMLImageElement;
+  layer: SVGSVGElement;
+}
 
 type Handle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w" | "p1" | "p2";
 
 type Drag =
   | { kind: "move"; id: string; sx: number; sy: number; orig: EditorObject; changed: boolean; wasSelected: boolean }
   | { kind: "resize"; id: string; handle: Handle; sx: number; sy: number; orig: EditorObject; box: Box; changed: boolean }
-  | { kind: "create"; obj: ShapeObj | LineObj; sx: number; sy: number }
+  | { kind: "create"; obj: ShapeObj | LineObj | MeasureObj; sx: number; sy: number }
   | { kind: "draw"; obj: InkObj };
 
 interface EditorOptions {
@@ -85,6 +116,7 @@ const TOOLS: { tool: Tool; icon: IconName; label: Key }[] = [
   { tool: "arrow", icon: "shapeArrow", label: "edit.tool.arrow" },
   { tool: "ink", icon: "pen", label: "edit.tool.ink" },
   { tool: "highlight", icon: "highlighter", label: "edit.tool.highlight" },
+  { tool: "measure", icon: "ruler", label: "edit.tool.measure" },
 ];
 
 export class Editor {
@@ -101,14 +133,20 @@ export class Editor {
   private fit = true;
   private drag: Drag | null = null;
   private editing: { obj: TextObj; area: HTMLTextAreaElement; isNew: boolean; before: string } | null = null;
-  private pageImages = new Map<string, string>();
+  /** Dernier rendu de chaque page (largeur en pixels, URL). */
+  private images = new Map<number, { key: string; url: string }>();
+  /** Pages proches de la zone visible : leur rendu est chargé. */
+  private nearby = new Set<number>();
+  private imageTimer = 0;
+  private imageGeneration = 0;
+  /** Page la plus visible (numéro affiché, miniature en surbrillance). */
+  private visiblePage = 0;
 
   private toolbar = h("div", { class: "editor-toolbar" });
   private strip = h("div", { class: "editor-pages" });
   private stage = h("div", { class: "editor-stage" });
-  private pageEl = h("div", { class: "editor-page" });
-  private img = h("img", { alt: "", draggable: false });
-  private layer: SVGSVGElement;
+  private column = h("div", { class: "editor-column" });
+  private views: PageView[] = [];
   private pageLabel = h("span", { class: "editor-page-label" });
   private zoomField = zoomField(0.25, 4, (z) => this.setZoom(z));
   private toolButtons = new Map<Tool, HTMLButtonElement>();
@@ -119,26 +157,51 @@ export class Editor {
   private redoBtn!: HTMLButtonElement;
 
   constructor(private opts: EditorOptions) {
-    this.layer = svg("svg", {
-      class: "editor-layer",
-      tabindex: 0,
-      role: "application",
-      "aria-roledescription": t("edit.canvasRole"),
-      "aria-label": t("edit.canvasHelp"),
+    const total = opts.pages.length;
+    this.views = opts.pages.map((_, index) => {
+      const layer = svg("svg", {
+        class: "editor-layer",
+        tabindex: index === 0 ? 0 : -1,
+        role: "application",
+        "aria-roledescription": t("edit.canvasRole"),
+        "aria-label": `${t("viewer.page", { n: index + 1, total })}. ${t("edit.canvasHelp")}`,
+      });
+      const img = h("img", { alt: "", draggable: false });
+      const el = h("div", { class: "editor-page", dataset: { page: String(index) } }, img, layer);
+      layer.addEventListener("pointerdown", (e) => this.onPointerDown(e, index));
+      // Empêche le clic sur la page de retirer le focus (saisie de texte immédiate).
+      layer.addEventListener("mousedown", (e) => e.preventDefault());
+      // Au clavier, la page qui reçoit le focus devient la page de travail.
+      layer.addEventListener("focus", () => this.activate(index));
+      return { index, el, img, layer };
     });
-    this.pageEl.append(this.img, this.layer);
-    this.stage.appendChild(this.pageEl);
+    this.column.append(...this.views.map((v) => v.el));
+    this.stage.appendChild(this.column);
     this.buildToolbar();
     this.buildStrip();
     this.root = h("div", { class: "editor" }, this.toolbar, h("div", { class: "editor-body" }, this.strip, this.stage), this.announcer);
 
-    this.layer.addEventListener("pointerdown", (e) => this.onPointerDown(e));
-    // Empêche le clic sur la page de retirer le focus (saisie de texte immédiate).
-    this.layer.addEventListener("mousedown", (e) => e.preventDefault());
+    // Rendus chargés seulement pour les pages proches de la zone visible.
+    const watcher = new IntersectionObserver(
+      (records) => {
+        for (const r of records) {
+          const index = Number((r.target as HTMLElement).dataset.page);
+          if (r.isIntersecting) this.nearby.add(index);
+          else this.nearby.delete(index);
+        }
+        this.scheduleImages();
+      },
+      { root: this.stage, rootMargin: "800px 0px" },
+    );
+    this.views.forEach((v) => watcher.observe(v.el));
+    opts.scope.add(() => watcher.disconnect());
+    // Calcul léger (positions des pages) : directement à chaque défilement.
+    this.stage.addEventListener("scroll", () => this.updateVisiblePage(), { passive: true });
+
     // Une police vient d'arriver : l'aperçu et les cadres se recalent dessus.
     opts.scope.add(
       onFontLoaded(() => {
-        this.render();
+        this.renderAll();
         if (this.editing) this.styleTextArea();
       }),
     );
@@ -168,6 +231,15 @@ export class Editor {
     return this.opts.pages[this.pageIndex] ?? { width: 595, height: 842 };
   }
 
+  /** Calque de la page de travail. */
+  private get layer(): SVGSVGElement {
+    return this.views[this.pageIndex]!.layer;
+  }
+
+  private get view(): PageView {
+    return this.views[this.pageIndex]!;
+  }
+
   private list(page = this.pageIndex): EditorObject[] {
     let list = this.objects.get(page);
     if (!list) {
@@ -181,12 +253,14 @@ export class Editor {
     return this.selectedId ? this.list().find((o) => o.id === this.selectedId) : undefined;
   }
 
+  /** Éléments qui seront écrits dans le PDF (les mesures seulement affichées ne comptent pas). */
   count(): { objects: number; pages: number } {
     let objects = 0;
     let pages = 0;
     for (const list of this.objects.values()) {
-      if (list.length) {
-        objects += list.length;
+      const n = list.filter((o) => o.type !== "measure" || o.keep).length;
+      if (n) {
+        objects += n;
         pages++;
       }
     }
@@ -203,9 +277,9 @@ export class Editor {
 
   toEditDocument(): EditDocument {
     const pages = [...this.objects.entries()]
-      .filter(([, list]) => list.length > 0)
-      .sort(([a], [b]) => a - b)
-      .map(([page, list]) => ({ page, objects: list.map(toWire) }));
+      .map(([page, list]) => ({ page, objects: list.flatMap(toWire) }))
+      .filter((p) => p.objects.length > 0)
+      .sort((a, b) => a.page - b.page);
     return { pages };
   }
 
@@ -235,6 +309,7 @@ export class Editor {
     if (prev === undefined) return;
     this.redoStack.push(this.snapshot());
     this.restore(prev);
+    this.renderAll();
     this.afterChange(true);
   }
 
@@ -243,6 +318,7 @@ export class Editor {
     if (next === undefined) return;
     this.undoStack.push(this.snapshot());
     this.restore(next);
+    this.renderAll();
     this.afterChange(true);
   }
 
@@ -331,7 +407,15 @@ export class Editor {
     this.tool = tool;
     if (tool !== "select") this.selectedId = null;
     for (const [k, b] of this.toolButtons) b.setAttribute("aria-pressed", String(k === tool));
-    this.layer.dataset.tool = tool;
+    this.column.dataset.tool = tool;
+  }
+
+  /** Unité des mesures (toutes les étiquettes sont mises à jour). */
+  setMeasureUnit(unit: MeasureUnit): void {
+    defaults.measure.unit = unit;
+    writeSetting("measureUnit", unit);
+    this.renderAll();
+    this.opts.onSelectionChange();
   }
 
   /** Image sélectionnée : quart de tour, miroir horizontal ou vertical. */
@@ -364,8 +448,8 @@ export class Editor {
   }
 
   private async insertImage(): Promise<void> {
-    // L'image va sur la page affichée au moment du clic, même si l'on change de page entre-temps.
-    const targetPage = this.pageIndex;
+    // L'image va sur la page affichée au moment du clic, même si l'on fait défiler entre-temps.
+    const targetPage = this.visiblePage;
     try {
       const [file] = await api.pickFiles("image", false);
       if (!file) return;
@@ -395,8 +479,9 @@ export class Editor {
         grayscale: false,
       };
       this.checkpoint();
+      this.activate(targetPage);
       this.list(targetPage).push(obj);
-      if (targetPage === this.pageIndex) this.selectedId = obj.id;
+      this.selectedId = obj.id;
       this.setTool("select");
       this.afterChange(true);
     } catch (e) {
@@ -449,7 +534,7 @@ export class Editor {
       const tile = h(
         "button",
         {
-          class: `editor-thumb${i === this.pageIndex ? " is-current" : ""}`,
+          class: `editor-thumb${i === this.visiblePage ? " is-current" : ""}`,
           type: "button",
           dataset: { page: String(i) },
           on: { click: () => this.goToPage(i) },
@@ -465,29 +550,65 @@ export class Editor {
 
   private updateStripBadges(): void {
     this.strip.querySelectorAll<HTMLElement>("[data-badge]").forEach((el) => {
-      const n = this.objects.get(Number(el.dataset.badge))?.length ?? 0;
+      // Les mesures seulement affichées ne vont pas dans le PDF : pas comptées.
+      const n = (this.objects.get(Number(el.dataset.badge)) ?? []).filter((o) => o.type !== "measure" || o.keep).length;
       el.textContent = n ? String(n) : "";
       el.style.display = n ? "" : "none";
     });
   }
 
+  /** Fait défiler jusqu'à la page `index`, qui devient la page de travail. */
   goToPage(index: number): void {
-    if (index < 0 || index >= this.opts.pages.length || index === this.pageIndex) return;
-    this.commitText();
-    this.pageIndex = index;
-    this.selectedId = null;
-    this.strip.querySelectorAll(".editor-thumb").forEach((el) => el.classList.toggle("is-current", (el as HTMLElement).dataset.page === String(index)));
-    this.strip.querySelector(".is-current")?.scrollIntoView({ block: "nearest" });
-    if (this.fit) this.fitWidth();
-    else this.layout();
-    this.opts.onSelectionChange();
+    const view = this.views[index];
+    if (!view) return;
+    this.stage.scrollTo({ top: Math.max(0, view.el.offsetTop - 16) });
+    this.setVisiblePage(index);
+    this.activate(index);
   }
 
-  // --- Zoom et rendu de la page ---------------------------------------------------
+  /**
+   * Page de travail : celle où se trouvent la sélection et le texte en cours.
+   * Changer de page valide le texte en cours et désélectionne.
+   */
+  private activate(index: number): void {
+    if (index === this.pageIndex || !this.views[index]) return;
+    this.commitText();
+    const previous = this.pageIndex;
+    const hadSelection = this.selectedId !== null;
+    this.selectedId = null;
+    this.pageIndex = index;
+    this.views.forEach((v) => v.layer.setAttribute("tabindex", v.index === index ? "0" : "-1"));
+    this.renderPage(previous);
+    this.renderPage(index);
+    if (hadSelection) this.opts.onSelectionChange();
+  }
+
+  private setVisiblePage(index: number): void {
+    if (index === this.visiblePage) return;
+    this.visiblePage = index;
+    this.pageLabel.textContent = t("viewer.page", { n: index + 1, total: this.opts.pages.length });
+    this.strip.querySelectorAll<HTMLElement>(".editor-thumb").forEach((el) => el.classList.toggle("is-current", el.dataset.page === String(index)));
+    this.strip.querySelector(".is-current")?.scrollIntoView({ block: "nearest" });
+  }
+
+  /** Après un défilement : page la plus visible ; elle devient la page de travail si rien n'est en cours ailleurs. */
+  private updateVisiblePage(): void {
+    const probe = this.stage.scrollTop + this.stage.clientHeight * 0.35;
+    let index = 0;
+    for (const v of this.views) {
+      if (v.el.offsetTop <= probe) index = v.index;
+      else break;
+    }
+    this.setVisiblePage(index);
+    if (!this.selectedId && !this.editing && !this.drag && index !== this.pageIndex) this.activate(index);
+  }
+
+  // --- Zoom et rendu des pages ----------------------------------------------------
 
   private fitWidth(): void {
     const available = Math.max(200, this.stage.clientWidth - 64);
-    this.zoom = Math.min(1.6, Math.max(0.25, available / this.pageSize.width));
+    const widest = Math.max(1, ...this.opts.pages.map((p) => p.width));
+    this.zoom = Math.min(1.6, Math.max(0.25, available / widest));
     this.fit = true;
     this.layout();
   }
@@ -505,53 +626,75 @@ export class Editor {
   }
 
   private layout(): void {
-    const { width, height } = this.pageSize;
-    this.pageEl.style.width = `${width * this.zoom}px`;
-    this.pageEl.style.height = `${height * this.zoom}px`;
-    this.layer.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    for (const v of this.views) {
+      const { width, height } = this.opts.pages[v.index]!;
+      v.el.style.width = `${width * this.zoom}px`;
+      v.el.style.height = `${height * this.zoom}px`;
+      v.layer.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    }
     this.zoomField.set(this.zoom);
-    this.pageLabel.textContent = t("viewer.page", { n: this.pageIndex + 1, total: this.opts.pages.length });
-    void this.loadPageImage();
-    this.render();
+    this.pageLabel.textContent = t("viewer.page", { n: this.visiblePage + 1, total: this.opts.pages.length });
+    this.scheduleImages();
+    this.renderAll();
     if (this.editing) this.styleTextArea();
   }
 
-  private renderTimer = 0;
-  private async loadPageImage(): Promise<void> {
-    const page = this.pageIndex;
-    const target = Math.min(3000, Math.max(300, Math.ceil((this.pageSize.width * this.zoom * (window.devicePixelRatio || 1)) / 200) * 200));
-    const key = `${page}:${target}`;
-    const cached = this.pageImages.get(key);
-    if (cached) {
-      this.img.src = cached;
-      return;
-    }
-    // Garde l'image actuelle (étirée) pendant le rendu de la nouvelle.
-    window.clearTimeout(this.renderTimer);
-    await new Promise((r) => (this.renderTimer = window.setTimeout(r, 120)));
-    if (this.opts.scope.isDisposed || page !== this.pageIndex) return;
-    try {
-      const bytes = await api.renderPage(this.opts.input(), page, target);
-      if (this.opts.scope.isDisposed) return;
-      const url = this.opts.scope.objectUrl(new Blob([bytes], { type: "image/jpeg" }));
-      this.pageImages.set(key, url);
-      if (page === this.pageIndex) this.img.src = url;
-    } catch (e) {
-      toast(errorText(toCommandError(e)), "error");
+  /** Charge (ou recharge à la bonne résolution) le rendu des pages proches, la plus visible d'abord. */
+  private scheduleImages(): void {
+    window.clearTimeout(this.imageTimer);
+    this.imageTimer = window.setTimeout(() => void this.loadImages(++this.imageGeneration), 120);
+  }
+
+  private async loadImages(generation: number): Promise<void> {
+    const order = [...this.nearby].sort((a, b) => Math.abs(a - this.visiblePage) - Math.abs(b - this.visiblePage));
+    for (const index of order) {
+      // Zoom ou défilement entre-temps : une nouvelle série a pris le relais.
+      if (generation !== this.imageGeneration || this.opts.scope.isDisposed) return;
+      await this.loadImage(this.views[index]!);
     }
   }
 
-  // --- Dessin du calque -----------------------------------------------------------
+  private async loadImage(view: PageView): Promise<void> {
+    const size = this.opts.pages[view.index]!;
+    const target = Math.min(3000, Math.max(300, Math.ceil((size.width * this.zoom * (window.devicePixelRatio || 1)) / 200) * 200));
+    const key = String(target);
+    const current = this.images.get(view.index);
+    if (current?.key === key) return;
+    // Garde l'image actuelle (étirée) pendant le rendu de la nouvelle.
+    try {
+      const bytes = await api.renderPage(this.opts.input(), view.index, target);
+      if (this.opts.scope.isDisposed) return;
+      const url = this.opts.scope.objectUrl(new Blob([bytes], { type: "image/jpeg" }));
+      this.images.set(view.index, { key, url });
+      view.img.src = url;
+      if (current) URL.revokeObjectURL(current.url);
+    } catch (e) {
+      if (view.index === this.visiblePage) toast(errorText(toCommandError(e)), "error");
+    }
+  }
 
+  // --- Dessin des calques ---------------------------------------------------------
+
+  /** Redessine la page de travail (le seul calque qui change pendant un geste). */
   render(): void {
+    this.renderPage(this.pageIndex);
+  }
+
+  private renderAll(): void {
+    for (const v of this.views) this.renderPage(v.index);
+  }
+
+  private renderPage(index: number): void {
+    const view = this.views[index];
+    if (!view) return;
     const children: SVGElement[] = [];
-    for (const obj of this.list()) {
+    for (const obj of this.objects.get(index) ?? []) {
       if (this.editing?.obj.id === obj.id) continue;
       children.push(this.renderObject(obj));
     }
-    const sel = this.selected;
+    const sel = index === this.pageIndex ? this.selected : undefined;
     if (sel && this.tool === "select" && !this.editing) children.push(this.renderSelection(sel));
-    this.layer.replaceChildren(...children);
+    view.layer.replaceChildren(...children);
   }
 
   private renderObject(obj: EditorObject): SVGElement {
@@ -611,6 +754,35 @@ export class Editor {
         }
         return g;
       }
+      case "measure": {
+        // Trait de cote : pointillé tant qu'elle n'est qu'affichée, plein si elle va dans le PDF.
+        const label = labelOf(obj);
+        const geo = measureGeometry(obj, label);
+        const g = svg("g", { ...common, class: `editor-measure${obj.keep ? " is-kept" : ""}` });
+        const lines = svg("g", {
+          stroke: obj.color,
+          "stroke-width": obj.width,
+          "stroke-linecap": "round",
+          "stroke-dasharray": obj.keep ? null : `${obj.width * 4} ${obj.width * 3}`,
+        });
+        lines.append(svg("line", { x1: obj.x1, y1: obj.y1, x2: obj.x2, y2: obj.y2 }));
+        for (const [x1, y1, x2, y2] of geo.ticks) lines.append(svg("line", { x1, y1, x2, y2, "stroke-dasharray": "none" }));
+        const text = svg("text", {
+          x: geo.textX,
+          y: geo.textY + 0.95 * geo.size,
+          fill: obj.color,
+          "font-family": fontCss("helvetica"),
+          "font-size": geo.size,
+          "xml:space": "preserve",
+        });
+        text.textContent = label;
+        g.append(
+          lines,
+          svg("rect", { x: geo.box.x, y: geo.box.y, width: geo.box.w, height: geo.box.h, rx: 2, fill: "#ffffff", "fill-opacity": 0.85 }),
+          text,
+        );
+        return g;
+      }
       case "ink": {
         const pts = obj.points.length === 1 ? [obj.points[0]!, obj.points[0]!] : obj.points;
         return svg("polyline", {
@@ -652,7 +824,7 @@ export class Editor {
   private handlesFor(obj: EditorObject): { handle: Handle; x: number; y: number }[] {
     // Texte : la taille se règle uniquement par la taille de police.
     if (obj.type === "text") return [];
-    if (obj.type === "line") {
+    if (obj.type === "line" || obj.type === "measure") {
       return [
         { handle: "p1", x: obj.x1, y: obj.y1 },
         { handle: "p2", x: obj.x2, y: obj.y2 },
@@ -679,7 +851,7 @@ export class Editor {
   private renderSelection(obj: EditorObject): SVGElement {
     const g = svg("g", { class: "editor-selection" });
     const pad = 3 / this.zoom;
-    if (obj.type !== "line") {
+    if (obj.type !== "line" && obj.type !== "measure") {
       const b = bounds(obj);
       g.appendChild(
         svg("rect", {
@@ -728,15 +900,22 @@ export class Editor {
     return undefined;
   }
 
-  private onPointerDown(e: PointerEvent): void {
+  private onPointerDown(e: PointerEvent, page: number): void {
     if (e.button !== 0) return;
+    if (page !== this.pageIndex) {
+      // Clic sur une autre page : elle devient la page de travail.
+      const wasEditing = !!this.editing;
+      this.activate(page);
+      if (wasEditing && this.tool === "text") return;
+    }
     if (this.editing) {
       this.commitText();
       if (this.tool === "text") return;
     }
     const p = this.toPage(e);
     const target = e.target as Element;
-    this.layer.setPointerCapture(e.pointerId);
+    const layer = this.layer;
+    layer.setPointerCapture(e.pointerId);
 
     switch (this.tool) {
       case "select": {
@@ -786,6 +965,15 @@ export class Editor {
         this.drag = { kind: "create", obj, sx: p.x, sy: p.y };
         break;
       }
+      case "measure": {
+        const d = defaults.measure;
+        const obj: MeasureObj = { id: newId(), type: "measure", x1: p.x, y1: p.y, x2: p.x, y2: p.y, color: d.color, width: d.width, opacity: d.opacity, keep: d.keep };
+        this.checkpoint();
+        this.list().push(obj);
+        this.drag = { kind: "create", obj, sx: p.x, sy: p.y };
+        this.render();
+        break;
+      }
       case "ink":
       case "highlight": {
         const d = this.tool === "ink" ? defaults.ink : defaults.highlight;
@@ -802,14 +990,14 @@ export class Editor {
 
     const move = (ev: PointerEvent) => this.onPointerMove(ev);
     const up = (ev: PointerEvent) => {
-      this.layer.removeEventListener("pointermove", move);
-      this.layer.removeEventListener("pointerup", up);
-      this.layer.removeEventListener("pointercancel", up);
+      layer.removeEventListener("pointermove", move);
+      layer.removeEventListener("pointerup", up);
+      layer.removeEventListener("pointercancel", up);
       this.onPointerUp(ev);
     };
-    this.layer.addEventListener("pointermove", move);
-    this.layer.addEventListener("pointerup", up);
-    this.layer.addEventListener("pointercancel", up);
+    layer.addEventListener("pointermove", move);
+    layer.addEventListener("pointerup", up);
+    layer.addEventListener("pointercancel", up);
   }
 
   private onPointerMove(e: PointerEvent): void {
@@ -843,7 +1031,7 @@ export class Editor {
       }
       case "create": {
         const o = d.obj;
-        if (o.type === "line") {
+        if (o.type === "line" || o.type === "measure") {
           o.x2 = p.x;
           o.y2 = p.y;
           if (e.shiftKey) {
@@ -883,6 +1071,22 @@ export class Editor {
     if (!d) return;
     if (d.kind === "create") {
       const o = d.obj;
+      if (o.type === "measure") {
+        // Un simple clic ne mesure rien : on retire la mesure vide.
+        if (Math.hypot(o.x2 - o.x1, o.y2 - o.y1) * this.zoom < 3) {
+          const list = this.list();
+          list.splice(list.indexOf(o), 1);
+          this.undoStack.pop();
+          this.updateHistoryButtons();
+          this.render();
+          return;
+        }
+        // L'outil reste actif pour enchaîner les mesures ; le panneau affiche la dernière.
+        this.selectedId = o.id;
+        this.afterChange(true);
+        this.announce(t("edit.measure.announce", { length: lengthText(o) }));
+        return;
+      }
       // Simple clic : taille par défaut.
       if (o.type === "line") {
         if (Math.hypot(o.x2 - o.x1, o.y2 - o.y1) < 4) {
@@ -924,7 +1128,7 @@ export class Editor {
 
   private applyResize(obj: EditorObject, d: Extract<Drag, { kind: "resize" }>, px: number, py: number, shift: boolean): void {
     const o = d.orig;
-    if (obj.type === "line" && o.type === "line") {
+    if ((obj.type === "line" && o.type === "line") || (obj.type === "measure" && o.type === "measure")) {
       if (d.handle === "p1") {
         obj.x1 = px;
         obj.y1 = py;
@@ -1026,7 +1230,7 @@ export class Editor {
     });
     this.editing = { obj, area, isNew, before };
     this.selectedId = obj.id;
-    this.pageEl.appendChild(area);
+    this.view.el.appendChild(area);
     this.styleTextArea();
     this.render();
     area.focus();
@@ -1097,6 +1301,7 @@ export class Editor {
 
   private describe(obj: EditorObject): string {
     if (obj.type === "line") return t(obj.arrow ? "edit.tool.arrow" : "edit.tool.line");
+    if (obj.type === "measure") return `${t("edit.tool.measure")} ${lengthText(obj)}`;
     if (obj.type === "ink") return t(obj.opacity < 0.7 && obj.width >= 10 ? "edit.tool.highlight" : "edit.tool.ink");
     if (obj.type === "text") return `${t("edit.tool.text")} « ${obj.lines.join(" ").slice(0, 40)} »`;
     return t(obj.type === "rect" ? "edit.tool.rect" : obj.type === "ellipse" ? "edit.tool.ellipse" : "edit.tool.image");
@@ -1143,6 +1348,10 @@ export class Editor {
     } else if (this.tool === "line" || this.tool === "arrow") {
       const d = defaults.line;
       obj = { id: newId(), type: "line", x1: cx - 80, y1: cy, x2: cx + 80, y2: cy, color: d.color, width: d.width, opacity: d.opacity, arrow: this.tool === "arrow" };
+    } else if (this.tool === "measure") {
+      // Au clavier : une mesure de 2 pouces à ajuster avec les poignées.
+      const d = defaults.measure;
+      obj = { id: newId(), type: "measure", x1: cx - 72, y1: cy, x2: cx + 72, y2: cy, color: d.color, width: d.width, opacity: d.opacity, keep: d.keep };
     }
     if (!obj) return;
     this.checkpoint();
@@ -1159,7 +1368,7 @@ export class Editor {
     if (target?.closest("input, textarea, select")) return;
     const ctrl = e.ctrlKey || e.metaKey;
     const key = e.key.toLowerCase();
-    const onCanvas = document.activeElement === this.layer;
+    const onCanvas = this.views.some((v) => v.layer === document.activeElement);
     if (onCanvas && key === "tab" && !ctrl) {
       if (this.cycleSelection(e.shiftKey)) e.preventDefault();
       return;
@@ -1201,10 +1410,10 @@ export class Editor {
       this.updateSelected((o) => translate(o, dx, dy));
     } else if (key === "pagedown") {
       e.preventDefault();
-      this.goToPage(this.pageIndex + 1);
+      this.goToPage(this.visiblePage + 1);
     } else if (key === "pageup") {
       e.preventDefault();
-      this.goToPage(this.pageIndex - 1);
+      this.goToPage(this.visiblePage - 1);
     }
   }
 }

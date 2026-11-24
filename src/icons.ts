@@ -34,6 +34,7 @@ import shapeEllipseSvg from "./assets/tools/shape-ellipse.svg?raw";
 import shapeLineSvg from "./assets/tools/shape-line.svg?raw";
 import shapeArrowSvg from "./assets/tools/shape-arrow.svg?raw";
 import highlighterSvg from "./assets/tools/highlighter.svg?raw";
+import rulerSvg from "./assets/tools/ruler.svg?raw";
 import undoSvg from "./assets/tools/undo.svg?raw";
 import redoSvg from "./assets/tools/redo.svg?raw";
 import duplicateSvg from "./assets/tools/duplicate.svg?raw";
@@ -57,6 +58,7 @@ import flipHSvg from "./assets/tools/flip-h.svg?raw";
 import flipVSvg from "./assets/tools/flip-v.svg?raw";
 import grayscaleSvg from "./assets/tools/grayscale.svg?raw";
 import splitSvg from "./assets/tools/split.svg?raw";
+import organizeSvg from "./assets/tools/organize.svg?raw";
 import wordToPdfSvg from "./assets/tools/word-to-pdf.svg?raw";
 
 const SOURCES = {
@@ -97,6 +99,7 @@ const SOURCES = {
   shapeLine: shapeLineSvg,
   shapeArrow: shapeArrowSvg,
   highlighter: highlighterSvg,
+  ruler: rulerSvg,
   undo: undoSvg,
   redo: redoSvg,
   duplicate: duplicateSvg,
@@ -105,6 +108,7 @@ const SOURCES = {
   grip: gripSvg,
   merge: mergeSvg,
   split: splitSvg,
+  organize: organizeSvg,
   compress: compressSvg,
   edit: editSvg,
   pdfToWord: pdfToWordSvg,

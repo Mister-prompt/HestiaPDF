@@ -5,10 +5,10 @@ import { h } from "../../dom";
 import { t, type Key } from "../../i18n";
 import { icon, type IconName } from "../../icons";
 import { modal } from "../../ui";
-import { defaults, Editor } from "../editor/editor";
+import { defaults, Editor, lengthText } from "../editor/editor";
 import { FONT_GROUPS, FONTS, fontDef, preloadFonts } from "../editor/fonts";
-import type { EditorObject } from "../editor/model";
-import { entriesBlocker, field, infoBox, type Entry, type ToolConfig, type ToolPage } from "../tool";
+import type { EditorObject, MeasureUnit } from "../editor/model";
+import { entriesBlocker, field, infoBox, segmented, type Entry, type ToolConfig, type ToolPage } from "../tool";
 
 const editors = new WeakMap<ToolPage, { entryId: string; editor: Editor }>();
 
@@ -162,11 +162,12 @@ function slider(
   );
 }
 
-type Kind = "text" | "shape" | "line" | "ink" | "highlight" | "image" | null;
+type Kind = "text" | "shape" | "line" | "ink" | "highlight" | "image" | "measure" | null;
 
 function kindOf(editor: Editor): Kind {
   const sel = editor.selected;
   if (sel) {
+    if (sel.type === "measure") return "measure";
     if (sel.type === "rect" || sel.type === "ellipse") return "shape";
     if (sel.type === "ink") return sel.width >= 10 && sel.opacity < 0.7 ? "highlight" : "ink";
     return sel.type === "line" ? "line" : sel.type;
@@ -184,9 +185,71 @@ function kindOf(editor: Editor): Kind {
       return "ink";
     case "highlight":
       return "highlight";
+    case "measure":
+      return "measure";
     default:
       return null;
   }
+}
+
+/** Réglages de l'outil Mesure : longueur, unité, ajout au PDF. */
+function measurePanel(editor: Editor, apply: (setDefault: () => void, mutate: (o: EditorObject) => void, endOfGesture?: boolean, refresh?: boolean) => void, endGesture: () => void): HTMLElement[] {
+  const d = defaults.measure;
+  const sel = editor.selected?.type === "measure" ? editor.selected : null;
+  const body: HTMLElement[] = [];
+  if (sel) {
+    const other = d.unit === "cm" ? "in" : "cm";
+    body.push(
+      h(
+        "div",
+        { class: "measure-readout", attrs: { "aria-live": "polite" } },
+        h("span", { class: "measure-value selectable", text: lengthText(sel) }),
+        h("span", { class: "measure-other selectable", text: lengthText(sel, other) }),
+        h("span", { class: "field-help", text: t("edit.measure.paper") }),
+      ),
+    );
+  } else {
+    body.push(infoBox(t("edit.measure.help")));
+  }
+  body.push(
+    field(
+      t("edit.measure.unit"),
+      segmented<MeasureUnit>(
+        [
+          { value: "cm", label: t("edit.measure.cm") },
+          { value: "in", label: t("edit.measure.in") },
+        ],
+        d.unit,
+        (u) => editor.setMeasureUnit(u),
+        t("edit.measure.unit"),
+      ),
+    ),
+  );
+  const keep = sel ? sel.keep : d.keep;
+  body.push(
+    h(
+      "label",
+      { class: "check-row" },
+      h("input", {
+        type: "checkbox",
+        checked: keep,
+        on: {
+          change: (e) => {
+            const v = (e.target as HTMLInputElement).checked;
+            apply(() => (d.keep = v), (o) => o.type === "measure" && (o.keep = v));
+          },
+        },
+      }),
+      h("span", { text: t("edit.measure.keep") }),
+    ),
+    h("div", { class: "field-help", text: t(keep ? "edit.measure.keptHelp" : "edit.measure.shownHelp") }),
+  );
+  const cur = sel ?? d;
+  body.push(
+    field(t("edit.color"), colorPicker(cur.color, false, (c, live) => c && apply(() => (d.color = c), (o) => o.type === "measure" && (o.color = c), !live, !live))),
+    slider(t("edit.thickness"), cur.width, 0.5, 6, 0.5, "pt", (v) => apply(() => (d.width = v), (o) => o.type === "measure" && (o.width = v), false, false), endGesture),
+  );
+  return body;
 }
 
 function propertiesPanel(page: ToolPage, editor: Editor): HTMLElement[] {
@@ -363,6 +426,8 @@ function propertiesPanel(page: ToolPage, editor: Editor): HTMLElement[] {
     }
   }
 
+  if (kind === "measure") body.push(...measurePanel(editor, apply, endGesture));
+
   if (kind === "ink" || kind === "highlight") {
     const d = kind === "ink" ? defaults.ink : defaults.highlight;
     const cur = sel?.type === "ink" ? sel : d;
@@ -372,7 +437,7 @@ function propertiesPanel(page: ToolPage, editor: Editor): HTMLElement[] {
     );
   }
 
-  if (kind) {
+  if (kind && kind !== "measure") {
     const target = sel ?? (kind === "text" ? defaults.text : kind === "shape" ? defaults.shape : kind === "line" ? defaults.line : kind === "ink" ? defaults.ink : kind === "highlight" ? defaults.highlight : null);
     if (target) {
       body.push(

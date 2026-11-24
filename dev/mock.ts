@@ -99,6 +99,12 @@ mockIPC(
         await sleep(500);
         await progress(args.onProgress, args.inputs.length);
         return { cancelled: false, outputs: [out("fusion.pdf", 3_100_000)], items: [], folder: null, hadPassword: args.inputs.some((i: any) => i.password) };
+      case "organize_pdf":
+        // Pour vérifier depuis la console ce qui partirait vers Rust.
+        (window as any).__lastOrganize = { inputs: args.inputs, pages: args.pages };
+        await sleep(400);
+        await progress(args.onProgress, args.pages.length);
+        return { cancelled: false, outputs: [out("organise.pdf", 2_400_000)], items: [], folder: null, hadPassword: args.inputs.some((i: any) => i.password) };
       case "split_pdf":
         await sleep(500);
         await progress(args.onProgress, 3);

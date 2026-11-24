@@ -60,6 +60,7 @@ pub fn run() {
             commands::reveal_in_folder,
             commands::app_info,
             commands::merge_pdfs,
+            commands::organize_pdf,
             commands::split_pdf,
             commands::compress_pdfs,
             commands::pdf_to_jpg,

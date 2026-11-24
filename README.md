@@ -14,13 +14,14 @@ des PDF sans jamais envoyer un fichier sur Internet.
 |---|---|
 | Fusionner PDF | ✅ |
 | Diviser PDF (plages, pages fixes, extraction) | ✅ |
+| Organiser PDF (glisser-déposer, sélection multiple, rotation, suppression, pages blanches, plusieurs PDF, aperçu) | ✅ |
 | Compresser PDF (3 niveaux, traitement par lot) | ✅ |
 | PDF en JPG (pages ou images intégrées, par lot) | ✅ |
 | JPG en PDF (JPG, PNG, WebP, BMP, TIFF, GIF ; orientation, marges, rotation) | ✅ |
 | Visionneuse PDF | ✅ |
 | PDF en Word / PowerPoint / Excel (moteur intégré, sans Office) | ✅ |
 | Word / PowerPoint / Excel en PDF (avec Microsoft Office, ou LibreOffice) | ✅ |
-| Modifier PDF (texte en 18 polices, images pivotables/miroir/noir et blanc, formes, flèches, dessin, surligneur ; annuler/rétablir) | ✅ |
+| Modifier PDF (texte en 18 polices, images pivotables/miroir/noir et blanc, formes, flèches, dessin, surligneur, mesure en cm ou pouces ; toutes les pages en défilement continu ; annuler/rétablir) | ✅ |
 
 ## Développement
 

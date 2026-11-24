@@ -89,6 +89,11 @@ export type SplitMode =
   | { mode: "allPages" }
   | { mode: "select"; pages: number[]; merge: boolean };
 
+/** Une page du PDF organisé (voir hestia-core/src/organize.rs). */
+export type PageSpec =
+  | { kind: "source"; file: number; page: number; rotation: number }
+  | { kind: "blank"; width: number; height: number; rotation: number };
+
 export type CompressionLevel = "low" | "recommended" | "extreme";
 
 export type ImageExport = { mode: "pages"; quality: "normal" | "high" } | { mode: "extract" };
@@ -178,6 +183,8 @@ export const api = {
 
   mergePdfs: (jobId: string, inputs: PdfInput[], suggestedName: string, onProgress: Channel<Progress>) =>
     invoke<JobOutcome>("merge_pdfs", { jobId, inputs, suggestedName, onProgress }),
+  organizePdf: (jobId: string, inputs: PdfInput[], pages: PageSpec[], suggestedName: string, onProgress: Channel<Progress>) =>
+    invoke<JobOutcome>("organize_pdf", { jobId, inputs, pages, suggestedName, onProgress }),
   splitPdf: (jobId: string, input: PdfInput, mode: SplitMode, onProgress: Channel<Progress>) =>
     invoke<JobOutcome>("split_pdf", { jobId, input, mode, onProgress }),
   compressPdfs: (

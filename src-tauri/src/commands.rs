@@ -18,6 +18,7 @@ use hestia_core::images_to_pdf::{ImageInput, ImagesToPdfOptions, images_to_pdf, 
 use hestia_core::inspect::{PdfInfo, inspect, render_page_jpeg};
 use hestia_core::merge::merge;
 use hestia_core::office::{DocKind, OfficeStatus, office_to_pdf, offline_default_printer};
+use hestia_core::organize::{PageSpec, organize};
 use hestia_core::output::{available_path, file_stem, sanitize_stem};
 use hestia_core::pdf_to_images::{ImageExport, pdf_to_images};
 use hestia_core::pdf_to_office::{OfficeFormat, pdf_to_office};
@@ -391,6 +392,30 @@ pub async fn merge_pdfs(
     let guard = state.start_job(&job_id);
     let job = guard.job(progress_to(on_progress));
     let result = blocking(move || merge(engine, inputs, output, job).map(|o| vec![o])).await?;
+    single_outcome(&state, result, None, had_password)
+}
+
+#[tauri::command]
+pub async fn organize_pdf(
+    window: WebviewWindow,
+    state: State<'_, AppState>,
+    job_id: String,
+    inputs: Vec<PdfInput>,
+    pages: Vec<PageSpec>,
+    suggested_name: String,
+    on_progress: Channel<Progress>,
+) -> CmdResult<JobOutcome> {
+    check_inputs(&state, inputs.iter().map(|i| i.path.as_path()))?;
+    let engine = state.engine()?;
+    let near = parent_of(&inputs[0].path);
+    let w = window.clone();
+    let Some(output) = blocking(move || ask_save_pdf(&w, &suggested_name, near.as_deref())).await? else {
+        return Ok(JobOutcome::cancelled());
+    };
+    let had_password = inputs.iter().any(|i| i.password().is_some());
+    let guard = state.start_job(&job_id);
+    let job = guard.job(progress_to(on_progress));
+    let result = blocking(move || organize(engine, inputs, pages, output, job).map(|o| vec![o])).await?;
     single_outcome(&state, result, None, had_password)
 }
 

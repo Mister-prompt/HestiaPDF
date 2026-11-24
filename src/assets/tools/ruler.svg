@@ -1,0 +1,5 @@
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <path fill="currentColor" opacity=".3" d="M3.6 15.9 15.9 3.6a2 2 0 0 1 2.8 0l1.7 1.7a2 2 0 0 1 0 2.8L8.1 20.4a2 2 0 0 1-2.8 0l-1.7-1.7a2 2 0 0 1 0-2.8Z"/>
+  <path d="m7 12.5 1.8 1.8M9.6 9.9l1.2 1.2M12.2 7.3l1.8 1.8M14.8 4.7l1.2 1.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M3.6 15.9 15.9 3.6a2 2 0 0 1 2.8 0l1.7 1.7a2 2 0 0 1 0 2.8L8.1 20.4a2 2 0 0 1-2.8 0l-1.7-1.7a2 2 0 0 1 0-2.8Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+</svg>
