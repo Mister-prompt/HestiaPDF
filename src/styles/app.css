@@ -1,41 +1,41 @@
 /* ==========================================================================
    Hestia PDF — feuille de style
    Thème clair / sombre (suit Windows, ou forcé via data-theme sur <html>).
-   Palette : aubergine #1E0B1B, jaune #FFEB33, gris #EBEBEB.
-   Le jaune ne sert jamais de texte sur fond clair (contraste insuffisant) :
+   Palette : charbon #1F1B18, orange #FF8A3D, crème #FBF6EF.
+   L'orange ne sert jamais de texte sur fond clair (contraste insuffisant) :
    en clair il colore les fonds (boutons, sélections), en sombre les détails.
    ========================================================================== */
 
 :root {
   color-scheme: light;
-  /* Jaune Hestia : boutons principaux, texte aubergine à 15:1. */
-  --accent: #ffeb33;
-  --accent-hover: #f7df14;
-  --accent-active: #ead200;
-  /* Bord des boutons jaunes, pour qu'ils se détachent du blanc. */
-  --accent-border: #d6bf00;
-  --on-accent: #1e0b1b;
-  /* Détails (texte, icônes, contours) en aubergine : ≥ 14:1. */
-  --accent-text: #1e0b1b;
-  --accent-soft: #fff6a6;
-  --accent-softer: #fffbdc;
-  --accent-ring: rgba(30, 11, 27, 0.24);
-  /* Pastilles, barres de progression, puces : aubergine et jaune. */
-  --mark: #1e0b1b;
-  --on-mark: #ffeb33;
-  --highlight: #ffeb33;
+  /* Orange Hestia : boutons principaux, texte charbon à 7:1. */
+  --accent: #ff8a3d;
+  --accent-hover: #ff7a24;
+  --accent-active: #f06a12;
+  /* Bord des boutons orange, pour qu'ils se détachent du crème. */
+  --accent-border: #e5701f;
+  --on-accent: #1f1b18;
+  /* Détails (texte, icônes, contours) en charbon : ≥ 14:1. */
+  --accent-text: #1f1b18;
+  --accent-soft: #ffd7bd;
+  --accent-softer: #fff0e5;
+  --accent-ring: rgba(31, 27, 24, 0.24);
+  /* Pastilles, barres de progression, puces : charbon et orange. */
+  --mark: #1f1b18;
+  --on-mark: #ff8a3d;
+  --highlight: #ffb27f;
 
-  --bg: #ebebeb;
-  --bg-glow: rgba(255, 235, 51, 0.32);
-  --surface: #ffffff;
-  --surface-2: #f7f7f7;
-  --surface-3: #efeeef;
-  --border: #dddbdd;
-  --border-strong: #c6c1c5;
-  --text: #1e0b1b;
-  --text-2: #4e4250;
-  /* ≥ 4,6:1 sur toutes les surfaces claires, fond gris compris. */
-  --text-3: #66596a;
+  --bg: #f3ece3;
+  --bg-glow: rgba(255, 138, 61, 0.2);
+  --surface: #fffdfa;
+  --surface-2: #fbf6ef;
+  --surface-3: #f1eae1;
+  --border: #e2d9ce;
+  --border-strong: #cbbfb1;
+  --text: #1f1b18;
+  --text-2: #4d4540;
+  /* ≥ 4,6:1 sur toutes les surfaces claires, fond compris. */
+  --text-3: #6b615a;
   --success: #137034;
   --success-soft: #e3f4e9;
   --warning: #8a5300;
@@ -43,11 +43,11 @@
   --danger: #b42318;
   --danger-soft: #fdeceb;
   --page: #ffffff;
-  --overlay: rgba(30, 11, 27, 0.45);
+  --overlay: rgba(31, 27, 24, 0.45);
 
-  --shadow-sm: 0 1px 2px rgba(30, 11, 27, 0.07);
-  --shadow-md: 0 4px 16px rgba(30, 11, 27, 0.09), 0 1px 3px rgba(30, 11, 27, 0.06);
-  --shadow-lg: 0 18px 50px rgba(30, 11, 27, 0.2);
+  --shadow-sm: 0 1px 2px rgba(31, 27, 24, 0.07);
+  --shadow-md: 0 4px 16px rgba(31, 27, 24, 0.09), 0 1px 3px rgba(31, 27, 24, 0.06);
+  --shadow-lg: 0 18px 50px rgba(31, 27, 24, 0.2);
 
   --radius-lg: 18px;
   --radius: 14px;
@@ -62,39 +62,39 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    /* Jaune Hestia : boutons principaux (texte aubergine à 15:1). */
-    --accent: #ffeb33;
-    --accent-hover: #fff176;
-    --accent-active: #f5dc12;
-    --accent-border: #ffeb33;
-    --on-accent: #1e0b1b;
-    /* Détails (texte, icônes, contours) en jaune : ≥ 11:1 sur toutes les surfaces. */
-    --accent-text: #ffeb33;
-    --accent-soft: rgba(255, 235, 51, 0.14);
-    --accent-softer: rgba(255, 235, 51, 0.07);
-    --accent-ring: rgba(255, 235, 51, 0.38);
-    /* Pastilles, barres de progression, puces : jaune sur aubergine. */
-    --mark: #ffeb33;
-    --on-mark: #1e0b1b;
+    /* Orange Hestia : boutons principaux (texte charbon à 7:1). */
+    --accent: #ff8a3d;
+    --accent-hover: #ff9d5c;
+    --accent-active: #f57a26;
+    --accent-border: #ff8a3d;
+    --on-accent: #1f1b18;
+    /* Détails (texte, icônes, contours) en orange : ≥ 5:1 sur toutes les surfaces. */
+    --accent-text: #ff8a3d;
+    --accent-soft: rgba(255, 138, 61, 0.16);
+    --accent-softer: rgba(255, 138, 61, 0.08);
+    --accent-ring: rgba(255, 138, 61, 0.4);
+    /* Pastilles, barres de progression, puces : orange sur charbon. */
+    --mark: #ff8a3d;
+    --on-mark: #1f1b18;
     --highlight: transparent;
-    --bg: #1e0b1b;
-    --bg-glow: rgba(255, 235, 51, 0.06);
-    --surface: #2a1627;
-    --surface-2: #311c2e;
-    --surface-3: #3a2436;
-    --border: #4a3246;
-    --border-strong: #5f4559;
-    --text: #ebebeb;
-    --text-2: #cdc3cb;
+    --bg: #1f1b18;
+    --bg-glow: rgba(255, 138, 61, 0.07);
+    --surface: #2a2521;
+    --surface-2: #312b27;
+    --surface-3: #3a332e;
+    --border: #4a423b;
+    --border-strong: #5e544b;
+    --text: #fbf6ef;
+    --text-2: #d8cfc5;
     /* ≥ 4,6:1 sur toutes les surfaces sombres. */
-    --text-3: #ab9fa8;
+    --text-3: #ada297;
     --success: #4ade80;
     --success-soft: rgba(74, 222, 128, 0.12);
     --warning: #fbbf24;
     --warning-soft: rgba(251, 191, 36, 0.12);
     --danger: #f87171;
     --danger-soft: rgba(248, 113, 113, 0.12);
-    --overlay: rgba(10, 3, 9, 0.66);
+    --overlay: rgba(8, 6, 5, 0.66);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 4px 18px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.55);
@@ -103,39 +103,39 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  /* Jaune Hestia : boutons principaux (texte aubergine à 15:1). */
-  --accent: #ffeb33;
-  --accent-hover: #fff176;
-  --accent-active: #f5dc12;
-  --accent-border: #ffeb33;
-  --on-accent: #1e0b1b;
-  /* Détails (texte, icônes, contours) en jaune : ≥ 11:1 sur toutes les surfaces. */
-  --accent-text: #ffeb33;
-  --accent-soft: rgba(255, 235, 51, 0.14);
-  --accent-softer: rgba(255, 235, 51, 0.07);
-  --accent-ring: rgba(255, 235, 51, 0.38);
-  /* Pastilles, barres de progression, puces : jaune sur aubergine. */
-  --mark: #ffeb33;
-  --on-mark: #1e0b1b;
+  /* Orange Hestia : boutons principaux (texte charbon à 7:1). */
+  --accent: #ff8a3d;
+  --accent-hover: #ff9d5c;
+  --accent-active: #f57a26;
+  --accent-border: #ff8a3d;
+  --on-accent: #1f1b18;
+  /* Détails (texte, icônes, contours) en orange : ≥ 5:1 sur toutes les surfaces. */
+  --accent-text: #ff8a3d;
+  --accent-soft: rgba(255, 138, 61, 0.16);
+  --accent-softer: rgba(255, 138, 61, 0.08);
+  --accent-ring: rgba(255, 138, 61, 0.4);
+  /* Pastilles, barres de progression, puces : orange sur charbon. */
+  --mark: #ff8a3d;
+  --on-mark: #1f1b18;
   --highlight: transparent;
-  --bg: #1e0b1b;
-  --bg-glow: rgba(255, 235, 51, 0.06);
-  --surface: #2a1627;
-  --surface-2: #311c2e;
-  --surface-3: #3a2436;
-  --border: #4a3246;
-  --border-strong: #5f4559;
-  --text: #ebebeb;
-  --text-2: #cdc3cb;
+  --bg: #1f1b18;
+  --bg-glow: rgba(255, 138, 61, 0.07);
+  --surface: #2a2521;
+  --surface-2: #312b27;
+  --surface-3: #3a332e;
+  --border: #4a423b;
+  --border-strong: #5e544b;
+  --text: #fbf6ef;
+  --text-2: #d8cfc5;
   /* ≥ 4,6:1 sur toutes les surfaces sombres. */
-  --text-3: #ab9fa8;
+  --text-3: #ada297;
   --success: #4ade80;
   --success-soft: rgba(74, 222, 128, 0.12);
   --warning: #fbbf24;
   --warning-soft: rgba(251, 191, 36, 0.12);
   --danger: #f87171;
   --danger-soft: rgba(248, 113, 113, 0.12);
-  --overlay: rgba(10, 3, 9, 0.66);
+  --overlay: rgba(8, 6, 5, 0.66);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 4px 18px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.55);
@@ -450,7 +450,7 @@ svg.icon {
 .hero h1 em {
   font-style: normal;
   color: var(--accent-text);
-  /* Clair : trait de surligneur jaune ; sombre : texte jaune. */
+  /* Clair : trait de surligneur orange ; sombre : texte orange. */
   background: linear-gradient(transparent 58%, var(--highlight) 58%, var(--highlight) 92%, transparent 92%);
   padding: 0 0.08em;
   /* L'expression mise en avant reste sur une seule ligne. */
@@ -1867,12 +1867,12 @@ svg.icon {
 .editor-selection .sel-box {
   fill: none;
   /* La page est blanche dans les deux thèmes : couleurs fixes, visibles sur le blanc. */
-  stroke: #1e0b1b;
+  stroke: #1f1b18;
   pointer-events: none;
 }
 .editor-selection .sel-handle {
-  fill: #ffeb33;
-  stroke: #1e0b1b;
+  fill: #ff8a3d;
+  stroke: #1f1b18;
 }
 .sel-handle.h-nw,
 .sel-handle.h-se {
@@ -1901,13 +1901,13 @@ svg.icon {
   margin: 0;
   padding: 0;
   border: 0;
-  outline: 1.5px dashed #1e0b1b;
+  outline: 1.5px dashed #1f1b18;
   outline-offset: 2px;
   background: rgba(255, 255, 255, 0.35);
   resize: none;
   overflow: hidden;
   white-space: pre;
-  caret-color: #1e0b1b;
+  caret-color: #1f1b18;
 }
 
 /* Panneau de propriétés */
@@ -2368,7 +2368,7 @@ svg.icon {
   pointer-events: none;
   transform: rotate(3deg) scale(0.8);
   transform-origin: top left;
-  filter: drop-shadow(0 12px 24px rgba(30, 11, 27, 0.3));
+  filter: drop-shadow(0 12px 24px rgba(31, 27, 24, 0.3));
 }
 .org-ghost.is-stack::before {
   content: "";

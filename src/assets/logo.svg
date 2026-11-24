@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!-- Hestia : le « H » en italique traversé d'une ligne de vitesse.
-       Palette : jaune #FFEB33 sur aubergine #1E0B1B. -->
-  <rect x="48" y="48" width="928" height="928" rx="216" fill="#1E0B1B"/>
-  <g transform="translate(132 339) scale(13.33)" fill="#FFEB33">
+       Palette : orange #FF8A3D sur charbon #1F1B18. -->
+  <rect x="48" y="48" width="928" height="928" rx="216" fill="#1F1B18"/>
+  <g transform="translate(132 339) scale(13.33)" fill="#FF8A3D">
     <!-- Jambage droit -->
     <path d="M42 0H57L42 26H27Z"/>
     <!-- Barre : pointe effilée vers la gauche, fondue dans le jambage droit -->
