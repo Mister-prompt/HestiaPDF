@@ -1464,7 +1464,7 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "hestia-core"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "flate2",
  "image",
@@ -1482,7 +1482,7 @@ dependencies = [
 
 [[package]]
 name = "hestia-pdf"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "hestia-core",
  "serde",
