@@ -17,6 +17,8 @@
   --on-accent: #1f1b18;
   /* Détails (texte, icônes, contours) en charbon : ≥ 14:1. */
   --accent-text: #1f1b18;
+  /* Icônes d'outils : orange plus profond, ≥ 3,2:1 sur toutes les surfaces claires. */
+  --accent-icon: #d95f12;
   --accent-soft: #ffd7bd;
   --accent-softer: #fff0e5;
   --accent-ring: rgba(31, 27, 24, 0.24);
@@ -70,6 +72,7 @@
     --on-accent: #1f1b18;
     /* Détails (texte, icônes, contours) en orange : ≥ 5:1 sur toutes les surfaces. */
     --accent-text: #ff8a3d;
+  --accent-icon: #ff8a3d;
     --accent-soft: rgba(255, 138, 61, 0.16);
     --accent-softer: rgba(255, 138, 61, 0.08);
     --accent-ring: rgba(255, 138, 61, 0.4);
@@ -111,6 +114,7 @@
   --on-accent: #1f1b18;
   /* Détails (texte, icônes, contours) en orange : ≥ 5:1 sur toutes les surfaces. */
   --accent-text: #ff8a3d;
+  --accent-icon: #ff8a3d;
   --accent-soft: rgba(255, 138, 61, 0.16);
   --accent-softer: rgba(255, 138, 61, 0.08);
   --accent-ring: rgba(255, 138, 61, 0.4);
@@ -517,7 +521,7 @@ svg.icon {
 }
 .tool-card .tool-icon {
   display: block;
-  color: var(--accent-text);
+  color: var(--accent-icon);
   margin: 2px 0 8px -2px;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -553,7 +557,7 @@ svg.icon {
   color: var(--text-3);
 }
 .tool-card.is-soon:hover .tool-icon {
-  color: var(--accent-text);
+  color: var(--accent-icon);
 }
 .badge {
   display: inline-flex;
@@ -647,7 +651,7 @@ svg.icon {
 .dropzone .tool-icon,
 .big-tool-icon {
   display: block;
-  color: var(--accent-text);
+  color: var(--accent-icon);
 }
 .dropzone h2 {
   font-size: 26px;
