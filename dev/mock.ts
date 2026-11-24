@@ -66,7 +66,7 @@ mockIPC(
     const args = (payload ?? {}) as Record<string, any>;
     switch (cmd) {
       case "app_info":
-        return { version: "0.1.0" };
+        return { version: "0.2.0" };
       case "startup_files":
         return [];
       case "pick_files":
