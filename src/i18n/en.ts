@@ -18,6 +18,7 @@ const en: Messages = {
   "home.filter.edit": "Edit",
   "home.privacy":
     "<strong>Your files stay with you.</strong> Hestia PDF does not need the Internet: everything is processed on this computer, with no account, no ads and no data collection.",
+  "home.openSource": "<strong>Free and open-source software</strong>, under the MIT licence. Source code: {url}",
   "home.soon": "Soon",
 
   "tool.merge.title": "Merge PDF",

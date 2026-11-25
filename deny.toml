@@ -41,7 +41,7 @@ allow = [
 ]
 confidence-threshold = 0.9
 
-# Nos propres crates (publish = false) : licence à décider plus tard.
+# Nos propres crates (publish = false, licence MIT) : pas sur crates.io, rien à vérifier.
 [licenses.private]
 ignore = true
 

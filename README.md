@@ -84,4 +84,7 @@ scripts/              Récupération vérifiée de PDFium, des icônes Papicons 
 - **Dépendances** : licences permissives uniquement (`deny.toml`), versions figées,
   PDFium vérifié par empreinte SHA-256.
 
+## Licence
+
+Hestia PDF est un logiciel libre et open source, sous licence [MIT](LICENSE).
 Composants tiers : voir [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -85,5 +85,7 @@ export function homeView(ctx: ViewContext): HTMLElement {
     chips,
     grid,
     h("div", { class: "privacy-note" }, icon("offline", 22), h("p", null, richText(t("home.privacy")))),
+    // Texte sélectionnable plutôt qu'un lien : l'appli n'ouvre jamais le réseau.
+    h("p", { class: "open-source-note" }, richText(t("home.openSource", { url: "github.com/Mister-prompt/HestiaPDF" }))),
   );
 }

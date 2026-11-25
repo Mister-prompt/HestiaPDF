@@ -18,6 +18,7 @@ const fr = {
   "home.filter.edit": "Modifier",
   "home.privacy":
     "<strong>Vos fichiers restent chez vous.</strong> Hestia PDF n'a pas besoin d'Internet : tous les traitements sont faits sur cet ordinateur, sans compte, sans publicité et sans collecte de données.",
+  "home.openSource": "<strong>Logiciel libre et open source</strong>, sous licence MIT. Code source : {url}",
   "home.soon": "Bientôt",
 
   "tool.merge.title": "Fusionner PDF",

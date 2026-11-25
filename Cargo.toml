@@ -6,7 +6,7 @@ members = ["crates/hestia-core", "src-tauri"]
 version = "0.2.2"
 edition = "2024"
 rust-version = "1.90"
-license = "UNLICENSED"
+license = "MIT"
 authors = ["Hestia PDF"]
 
 [workspace.dependencies]
